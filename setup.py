@@ -12,7 +12,7 @@ with open(os.path.join(current_path, 'README.md'), encoding='utf-8') as f:
 setup(
     name='simple_othello', 
     packages=find_packages(exclude=('*.pyc',)),
-    version='0.0.1',
+    version='0.1.1',
     license='MIT', 
     install_requires=[],
     author='Michiyasu Uchiyama',
