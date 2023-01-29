@@ -17,6 +17,11 @@ class Othello:
         self.search_directions = self._get_search_directions(CFG)
         self.max_range_index = self._get_max_range_index(CFG)
 
+        self.width = CFG.lines
+        self.done = False
+        self.reward = 0
+
+
     def _get_search_directions(self, CFG):
         """ 
         探索ポイント（8方向）
@@ -39,6 +44,8 @@ class Othello:
         self.pass_counter = 0
         self.change_pos_list
         self._set_init_state()
+        self.reward = 0
+        self.done = False
         return self.state
 
     def _set_init_state(self):
