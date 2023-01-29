@@ -79,14 +79,13 @@ class Othello:
             self.player = -self.player
             return self.state, reward, done
 
-        if not self._is_legal_action(action):
+        if not self._is_legal_action(self.state, action):
             input("E100: Not legal action.")
             self.player = -self.player
             return self.state, reward, done
 
         for pos in self.change_pos_list:
             x,y = self._action2xy(pos)
-            # self.state[pos] = self.player
             self.state[x][y] = self.player
 
         next_state = self._get_next_state(action)
@@ -142,10 +141,10 @@ class Othello:
     def _is_draw(self):
         return False
 
-    def _is_legal_action(self, action):
+    def _is_legal_action(self, state, action):
 
         # 壁の追加（戻り値：壁付の盤面と、位置情報）
-        board_vec, pos = self._add_wall(action)
+        board_vec, pos = self._add_wall(state, action)
 
         is_legal_action = False
         
@@ -198,15 +197,14 @@ class Othello:
         return num_opponent
 
 
-    def get_legal_actions(self):
+    def get_legal_actions(self, state):
 
         legal_actions = []
 
         for action in range(64):
             x, y = self._action2xy(action)
-            # if self.state[action] == 0:
-            if self.state[x][y] == 0:
-                if self._is_legal_action(action):
+            if state[x][y] == 0:
+                if self._is_legal_action(state, action):
                     legal_actions.append(action)
         
         return legal_actions
@@ -216,8 +214,8 @@ class Othello:
         y = action %  self.CFG.lines
         return x, y
 
-    def _add_wall(self, action):
-        state_vec = self._matrix2vec(self.state)
+    def _add_wall(self, state, action):
+        state_vec = self._matrix2vec(state)
         board_vec = []
         pos = action
 
@@ -243,8 +241,7 @@ class Othello:
             temp_change_pos_list.append(search_pos)
             search_pos = search_pos + search_direction
 
-        # 補正
-        # Remove Wall positiojn
+        # 補正 Remove Wall positiojn
         for i, pos in enumerate(temp_change_pos_list):
 
             if 1 <= pos <= 8:
