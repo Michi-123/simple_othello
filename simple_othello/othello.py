@@ -1,315 +1,144 @@
 #!/usr/bin/env python
-import random
-import time
-import numpy as np
-import matplotlib.pyplot as plt
-import copy
+"""
+オセロは、相手の手番で自分が勝つこともあるので、終了の報酬の値が五目並べとことなります
+"""
 
-class Othello:
+#version 1.x
 
-    def __init__(self, CFG):
-
-        self.CFG = CFG
-        self.state = None
-        self.player = None
-        self.pass_counter = None
-        self.change_pos_list = []
-        self.search_directions = self._get_search_directions(CFG)
-        self.max_range_index = self._get_max_range_index(CFG)
-
-        self.width = CFG.lines
-        self.done = False
-        self.reward = 0
+def _is_on_board(x, y):
+    return 0 <= x < 8 and 0 <= y < 8
 
 
-    def _get_search_directions(self, CFG):
-        """ 
-        探索ポイント（8方向）
-        [-6, -5, -4, -1, 1, 4, 5, 6]
-        """
-        c = CFG.lines
-
-        return [-c-2, -c-1, -c, -1, 1, c, c+1, c+2]
-
-
-    def _get_max_range_index(self, CFG):
-        """ 
-        壁を含んだ最大インデックス
-        """
-        c = CFG.lines
-        return c * c + c - 1
-
-    def reset(self):
-        self.player=self.CFG.first_player
-        self.pass_counter = 0
-        self.change_pos_list
-        self._set_init_state()
-        self.reward = 0
-        self.done = False
-        return self.state
-
-    def _set_init_state(self):
-        state = []
+def _flip_pieces(state, player, xstart, ystart):
+    state[xstart][ystart] = player
+    search_directions = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]
+    
+    for xdir, ydir in search_directions:
+        x, y = xstart + xdir, ystart + ydir
         
-        for r in range(self.CFG.lines):
-            row = []
-
-            for c in range(self.CFG.lines):
-                row.append(self.CFG.blank)
-
-            state.append(row)
+        if _is_on_board(x, y) and state[x][y] == -player:
+            x += xdir
+            y += ydir
             
-        # 初期ピース
-        state[3][3] = 1
-        state[3][4] = -1
-        state[4][3] = -1
-        state[4][4] = 1
+            if not _is_on_board(x, y):
+                continue
+                
+            while state[x][y] == -player:
+                x += xdir
+                y += ydir
+                if not _is_on_board(x, y):
+                    break
+                    
+            if not _is_on_board(x, y):
+                continue
+                
+            if state[x][y] == player:
+                while True:
+                    x -= xdir
+                    y -= ydir
+                    if x == xstart and y == ystart:
+                        break
+                    state[x][y] = player
 
-        self.state = state
 
-    def step(self, action):
-        reward = 0
-        done = False
-
-        if self._is_done():
-            done = True
-            self.done = True
-            print("player", self.player)
-            
-            if not self._is_draw():
-                reward = -1
-            
-            return self.state, reward, done
-
-        if action == self.CFG.pass_:
-            print("Pass")
-            self.player = -self.player
-            return self.state, reward, done
-
-        if not self._is_legal_action(self.state, action):
-            input("E100: Not legal action.")
-            self.player = -self.player
-            return self.state, reward, done
-
-        for pos in self.change_pos_list:
-            x,y = self._action2xy(pos)
-            self.state[x][y] = self.player
-
-        next_state = self._get_next_state(action)
-        self.state = next_state
-            
-        self.player = -self.player
-        return next_state, reward, done
-
-    def render(self, plt=None):
-
-        if plt==True:
-            self.draw_board()
-        else:
-            print(self.state)
-
-    def _get_next_state(self, action):
-        next_state=copy.deepcopy(self.state)
-        x,y = self._action2xy(action)
-        next_state[x][y] = self.player
-        return next_state
-
-    def _matrix2vec(self, state):
-        state_vec = np.array(state).reshape(-1)
-        return state_vec
-
-    def _is_done(self):
-        state_vec = self._matrix2vec(self.state)
-        for s in state_vec:
-            if s == 0:
-                return False
-        
-        return True
-
-    def count_winner(self, player):
-        state_vec = self._matrix2vec(self.state)
-        w = 0
-        b = 0
-
-        for s in state_vec:
-            if s == -1:
-                b += 1
-            elif s == 1:
-                w += 1
-        print("black", b)
-        print("white", w)
-        if b < w:
-            reward = player
-        else:
-            reward = -player
-
-        return reward
- 
-    def _is_draw(self):
+def _is_valid_move(state, player, x_start, y_start):
+    if state[x_start][y_start] != 0:
         return False
 
-    def _is_legal_action(self, state, action):
+    state[x_start][y_start] = player
+    for x_dir, y_dir in [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]:
+        x, y = x_start + x_dir, y_start + y_dir
 
-        # 壁の追加（戻り値：壁付の盤面と、位置情報）
-        board_vec, pos = self._add_wall(state, action)
+        if _is_on_board(x, y) and state[x][y] == -player:
+            x += x_dir
+            y += y_dir
 
-        is_legal_action = False
-        
-        # 探索ポイント別に処理（線形探索）
-        self.change_pos_list = []
-        for search_direction in self.search_directions:
+            if not _is_on_board(x, y):
+                continue
+                
+            while state[x][y] == -player:
+                x += x_dir
+                y += y_dir
+                if not _is_on_board(x, y):
+                    break
 
-            # 探索ポイントを設定
-            search_pos = pos + search_direction
-
-            # 盤面にないインデックスならスキップ
-            if search_pos < 0 or search_pos > self.max_range_index:
+            if not _is_on_board(x, y):
                 continue
 
-            num_opponent = self._linear_search(search_direction, board_vec, search_pos)
+            if state[x][y] == player:
+                state[x_start][y_start] = 0
+                return True
 
-            if num_opponent > 0:
-                is_legal_action = True
-                # 反転させた位置を格納
-                self._set_change_pos(pos, search_direction, num_opponent)
+    state[x_start][y_start] = 0
+    return False
 
-        return is_legal_action
+# GPT Othello
+class Othello:
+    def __init__(self, CFG):
+        self.player = -1
+        self.state = None
+        self.lines = 8
+        self.CFG = CFG
 
-    def _linear_search(self, search_direction, board_vec, search_pos):
-        # 相手の駒のカウント初期化
-        num_opponent = 0
+    def reset(self):
+        self.state = [[0 for _ in range(8)] for _ in range(8)]
+        self.state[3][3] = -1
+        self.state[4][4] = -1
+        self.state[3][4] = 1
+        self.state[4][3] = 1
+        self.player = -1
 
-        # 置き石である間繰り返し
-        while True:
+        return self.state
 
-            # 相手の石なら
-            if board_vec[search_pos] == -self.player:
-                num_opponent += 1
-                search_pos = search_pos + search_direction
-                # 範囲外のインデックスなら跳ばす
-                if search_pos < 0 or self.max_range_index < search_pos:
-                    is_search_end_point = False
-                    break
-            # 自分の石なら
-            elif board_vec[search_pos] == self.player:
-                is_search_end_point = True
-                break
-            else:
-                is_search_end_point = False
-                break
-        
-        if not is_search_end_point:
-            num_opponent = 0
+    def step(self, a):
+        if a == self.CFG.pass_:
+            self.player = -self.player
+            return self.state, 0, False
 
-        return num_opponent
+        x, y = a // 8, a % 8
 
+        _flip_pieces(self.state, self.player, x, y)
+        self.player = -self.player
 
-    def get_legal_actions(self, state):
+        done = self.game_over()
 
+        if done:
+            reward = self.winner()
+        else:
+            reward = 0
+
+        return self.state, reward, done
+
+    def get_legal_actions(self):
         legal_actions = []
-
-        for action in range(64):
-            x, y = self._action2xy(action)
-            if state[x][y] == 0:
-                if self._is_legal_action(state, action):
-                    legal_actions.append(action)
-        
+        for x in range(8):
+            for y in range(8):
+                if _is_valid_move(self.state, self.player, x, y):
+                    legal_actions.append(x * 8 + y)
         return legal_actions
 
-    def _action2xy(self, action):
-        x = action // self.CFG.lines
-        y = action %  self.CFG.lines
-        return x, y
+    def render(self):
+        symbols = {1: 'O', 0: '-', -1: 'X'}
+        print('  0 1 2 3 4 5 6 7')
+        for i, row in enumerate(self.state):
+            print(i, ' '.join(symbols[x] for x in row))
 
-    def _add_wall(self, state, action):
-        state_vec = self._matrix2vec(state)
-        board_vec = []
-        pos = action
+    def game_over(self):
+        for row in self.state:
+            if 0 in row:
+                return False
+        return True
 
-        for i in range(len(state_vec)):
-            if i % self.CFG.lines == 0:
-                board_vec.append(self.CFG.wall)
-                board_vec.append(state_vec[i])
-                if i <= action:
-                    pos += 1
-            else:
-                board_vec.append(state_vec[i])
+    # def _is_pass(self):
+    #     return not any(self.get_legal_actions())
 
-        return board_vec, pos
+    def winner(self):
+        x_count = sum(row.count(-1) for row in self.state)
+        o_count = sum(row.count(1) for row in self.state)
 
-    def _set_change_pos(self, pos, search_direction, num_opponent):
-
-        # 検索ポイントを初期化
-        search_pos = pos + search_direction
-
-        # 変更箇所を一覧に追加
-        temp_change_pos_list = []
-        for i in range(num_opponent):
-            temp_change_pos_list.append(search_pos)
-            search_pos = search_pos + search_direction
-
-        # 補正 Remove Wall positiojn
-        for i, pos in enumerate(temp_change_pos_list):
-
-            if 1 <= pos <= 8:
-                temp_change_pos_list[i] -= 1
-            elif 10 <= pos <= 17:
-                temp_change_pos_list[i] -= 2
-            elif 19 <= pos <= 26:
-                temp_change_pos_list[i] -= 3
-            elif 28 <= pos <= 35:
-                temp_change_pos_list[i] -= 4
-            elif 37 <= pos <= 44:
-                temp_change_pos_list[i] -= 5
-            elif 46 <= pos <= 53:
-                temp_change_pos_list[i] -= 6
-            elif 55 <= pos <= 62:
-                temp_change_pos_list[i] -= 7
-            elif 64 <= pos <= 71:
-                temp_change_pos_list[i] -= 8
-        
-        for pos in temp_change_pos_list:
-            self.change_pos_list.append(pos)
-
-    def draw_board(self):
-        # https://qiita.com/secang0/items/1229212a37d8c9922901
-
-        img_gray = []
-        img = []
-        counter = 1
-
-        state_vec = self._matrix2vec(self.state)
-
-        for i in state_vec:
-            if i == 1:
-                j = [255, 255, 255] # white
-            elif i == -1:
-                j = [0, 0, 0] # Black
-            else:
-                j = [0, 150, 0] # Green
-
-            img.append(j)
-            if counter % self.CFG.lines == 0:
-                img_gray.append(img)
-                img = []
-            counter += 1
-
-        img_gray = np.array(img_gray, dtype=np.uint8)
-
-        # Figureを設定
-        fig = plt.figure()
-        # Axesを追加
-        ax = fig.add_subplot(111)        
-        # x軸の目盛設定
-        ax.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8])
-
-        plt.grid(color='b', linestyle=':', linewidth=0.3)
-        plt.imshow(img_gray, cmap='gray_r', vmin=0, vmax=100, interpolation='none')
-        # plt.imshow(img_gray, cmap='gray_r', vmin=0, vmax=255, interpolation='none')
-        plt.show()
-
-        # timestamp = int(time.time() * 1000)
-        # filename = "save\picture_" + str(timestamp) + ".png"
-        # plt.imsave(filename, img_gray, vmin=0, vmax=255, cmap='gray_r', format='png', origin='upper', dpi=0.01)
-        
-        # self.save_log(board, pos)
+        if o_count < x_count:
+            return -1
+        elif x_count < o_count:
+            return 1
+        else:
+            return 0
