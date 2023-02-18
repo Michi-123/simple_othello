@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
 オセロは、相手の手番で自分が勝つこともあるので、終了の報酬の値が五目並べとことなります
+このプログラムコードは、ChatGPTに作らせたオセロをチューニングしたものです。
+https://youtu.be/7OAXOu1HNkQ
 """
 
 #version 1.x
@@ -75,23 +77,32 @@ def _is_valid_move(state, player, x_start, y_start):
 # GPT Othello
 class Othello:
     def __init__(self, CFG):
-        self.player = -1
-        self.state = None
-        self.lines = 8
         self.CFG = CFG
+        self.player = None
+        self.state = None
+        self.lines = 8 # 8x8 size board
+        self.pass_player = {}
 
     def reset(self):
         self.state = [[0 for _ in range(8)] for _ in range(8)]
-        self.state[3][3] = -1
+        self.state[3][3] = -1 # first_player
         self.state[4][4] = -1
-        self.state[3][4] = 1
+        self.state[3][4] = 1 # second_player
         self.state[4][3] = 1
-        self.player = -1
-
+        self.player = self.CFG.first_player
+        self.pass_player[self.CFG.first_player] = 0
+        self.pass_player[self.CFG.second_player] = 0
         return self.state
 
     def step(self, a):
+
         if a == self.CFG.pass_:
+            # パスのカウントアップ
+            self.pass_player[self.player] += 1
+            # パスが指定の値以上であれば負けとして終了
+            if self.pass_player[self.player] > 1:
+                return self.state, -1, True
+
             self.player = -self.player
             return self.state, 0, False
 
