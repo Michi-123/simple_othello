@@ -85,10 +85,10 @@ class Othello:
 
     def reset(self):
         self.state = [[0 for _ in range(8)] for _ in range(8)]
-        self.state[3][3] = -1 # first_player
-        self.state[4][4] = -1
-        self.state[3][4] = 1 # second_player
-        self.state[4][3] = 1
+        self.state[3][3] = 1 # second_player
+        self.state[4][4] = 1
+        self.state[3][4] = -1 # first_player
+        self.state[4][3] = -1
         self.player = self.CFG.first_player
         self.pass_player[self.CFG.first_player] = 0
         self.pass_player[self.CFG.second_player] = 0
