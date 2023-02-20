@@ -5,7 +5,8 @@
 https://youtu.be/7OAXOu1HNkQ
 """
 
-#version 1.x
+
+# version 1.x
 
 def _is_on_board(x, y):
     return 0 <= x < 8 and 0 <= y < 8
@@ -14,26 +15,26 @@ def _is_on_board(x, y):
 def _flip_pieces(state, player, xstart, ystart):
     state[xstart][ystart] = player
     search_directions = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]
-    
+
     for xdir, ydir in search_directions:
         x, y = xstart + xdir, ystart + ydir
-        
+
         if _is_on_board(x, y) and state[x][y] == -player:
             x += xdir
             y += ydir
-            
+
             if not _is_on_board(x, y):
                 continue
-                
+
             while state[x][y] == -player:
                 x += xdir
                 y += ydir
                 if not _is_on_board(x, y):
                     break
-                    
+
             if not _is_on_board(x, y):
                 continue
-                
+
             if state[x][y] == player:
                 while True:
                     x -= xdir
@@ -57,7 +58,7 @@ def _is_valid_move(state, player, x_start, y_start):
 
             if not _is_on_board(x, y):
                 continue
-                
+
             while state[x][y] == -player:
                 x += x_dir
                 y += y_dir
@@ -74,20 +75,21 @@ def _is_valid_move(state, player, x_start, y_start):
     state[x_start][y_start] = 0
     return False
 
+
 # GPT Othello
 class Othello:
     def __init__(self, CFG):
         self.CFG = CFG
         self.player = None
         self.state = None
-        self.lines = 8 # 8x8 size board
+        self.lines = 8  # 8x8 size board
         self.pass_player = {}
 
     def reset(self):
         self.state = [[0 for _ in range(8)] for _ in range(8)]
-        self.state[3][3] = 1 # second_player
+        self.state[3][3] = 1  # second_player
         self.state[4][4] = 1
-        self.state[3][4] = -1 # first_player
+        self.state[3][4] = -1  # first_player
         self.state[4][3] = -1
         self.player = self.CFG.first_player
         self.pass_player[self.CFG.first_player] = 0
