@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# @title Othello
 """
 オセロは、相手の手番で自分が勝つこともあるので、終了の報酬の値が五目並べとことなります
 このプログラムコードは、ChatGPTに作らせたオセロをチューニングしたものです。
@@ -109,16 +110,15 @@ class Othello:
             return self.state, 0, False
 
         x, y = a // 8, a % 8
-
         _flip_pieces(self.state, self.player, x, y)
-        self.player = -self.player
-
         done = self.game_over()
 
         if done:
             reward = self.winner()
         else:
             reward = 0
+
+        self.player = -self.player
 
         return self.state, reward, done
 
@@ -150,8 +150,8 @@ class Othello:
         o_count = sum(row.count(1) for row in self.state)
 
         if o_count < x_count:
-            return -1
+            return -1 * self.player
         elif x_count < o_count:
-            return 1
+            return 1 * self.player
         else:
             return 0
