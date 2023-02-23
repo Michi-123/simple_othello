@@ -13,7 +13,8 @@ def _is_on_board(x, y):
     return 0 <= x < 8 and 0 <= y < 8
 
 
-def _flip_pieces(state, player, xstart, ystart):
+def _flip_pieces(state, player, a):
+    xstart, ystart = a // 8, a % 8
     state[xstart][ystart] = player
     search_directions = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]
 
@@ -100,17 +101,11 @@ class Othello:
     def step(self, a):
 
         if a == self.CFG.pass_:
-            # パスのカウントアップ
-            self.pass_player[self.player] += 1
-            # パスが指定の値以上であれば負けとして終了
-            if self.pass_player[self.player] > 1:
-                return self.state, -1, True
-
+            reward, done = self.pass_process()
             self.player = -self.player
-            return self.state, 0, False
+            return self.state, reward, donea
 
-        x, y = a // 8, a % 8
-        _flip_pieces(self.state, self.player, x, y)
+        _flip_pieces(self.state, self.player, a)
         done = self.game_over()
 
         if done:
@@ -121,6 +116,19 @@ class Othello:
         self.player = -self.player
 
         return self.state, reward, done
+    
+    def pass_process(self):
+        # パスのカウントアップ
+        self.pass_player[self.player] += 1
+        # パスが指定の値以上であれば終了
+        if self.pass_player[self.player] > 1:
+            reward = self.winner()
+            done = True
+        else:
+            reward = 0
+            done = False
+            
+        return reward, done
 
     def get_legal_actions(self):
         legal_actions = []
