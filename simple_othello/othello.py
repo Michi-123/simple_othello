@@ -103,7 +103,7 @@ class Othello:
         if a == self.CFG.pass_:
             reward, done = self.pass_process()
             self.player = -self.player
-            return self.state, reward, donea
+            return self.state, reward, done
 
         _flip_pieces(self.state, self.player, a)
         done = self.game_over()
