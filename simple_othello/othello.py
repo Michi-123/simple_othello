@@ -86,6 +86,7 @@ class Othello:
         self.state = None
         self.lines = 8  # 8x8 size board
         self.pass_player = {}
+        self.width = self.lines
 
     def reset(self):
         self.state = [[0 for _ in range(8)] for _ in range(8)]
