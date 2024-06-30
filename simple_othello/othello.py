@@ -137,6 +137,8 @@ class Othello:
             for y in range(8):
                 if _is_valid_move(self.state, self.player, x, y):
                     legal_actions.append(x * 8 + y)
+
+        legal_actions.append(self.CFG.pass_) # パスの追加
         return legal_actions
 
     def render(self):
